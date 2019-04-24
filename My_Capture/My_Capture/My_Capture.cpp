@@ -9,7 +9,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-
+// 抓包工具
 struct IPHeader
 {
 	union {
@@ -115,10 +115,12 @@ int main()
 	while (true)
 	{
 		memset(&ipData, 0, sizeof(ipData));
+		// 从网卡接收数据
 		recvfrom(s, readBuf, 10240, 0, (sockaddr*)&fromAddr, &len);
 		CopyMemory(&ipData, readBuf, sizeof(IPHeader));
 		char SourceIP[16] = { 0 };
 		char DesIP[16] = { 0 };
+		// 网络字节序转主机字符串
 		InetNtopA(AF_INET, &ipData.SrcAddr, SourceIP, 16);
 		InetNtopA(AF_INET, &ipData.DstAddr, DesIP, 16);
 		// 过滤掉不相关的IP数据报
@@ -135,21 +137,26 @@ int main()
 			memset(data, 0, 1024);
 			std::cout << "<<<This is a tcp>>>: ";
 			BYTE andBit = 15;
+			// 15 = 00001111进行与运算可以把前四位置零
 			BYTE ipLen = ipData.HdrLen & andBit;
 			CopyMemory(&tcpData, readBuf + (ipLen * 4), sizeof(TCPHeader));
+			// 右移四位得到DataOffset的大小
 			BYTE tcpLen = tcpData.DataOff >> 4;
 			//std::cout << tcpLen * 4 << "\n";
 			//std::cout << " ======= " << tcpLen * 4 << "\n";
 			CopyMemory(data, readBuf + (ipLen * 4) + (tcpLen * 4), 1024);
 			/*int port = tcpData.DstPort;
 			printf("%d\n", port * 1);*/
+			// 网络字节序转主机字节序
 			int sp = htons(tcpData.SrcPort);
 			int dp = htons(tcpData.DstPort);
 			std::cout << "SourcePort " << sp << "\t";
 			std::cout << "DesPort " << dp << "\n";
 			std::cout << "\n=======================================================================================\n";
+			// 逐个字节打印
 			for (int i = 0; i < 1024; i++)
 			{
+				
 				printf("%c", data[i]);
 			}
 			//printf("Data is: %s\n\n", readBuf);
