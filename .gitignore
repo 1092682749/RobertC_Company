@@ -4,8 +4,6 @@
 *.tlog
 *.log
 *.vs/
-*.user
-*.filters
 *.pdb
 *.exe
 *.ilk
