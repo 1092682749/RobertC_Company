@@ -4,7 +4,6 @@
 *.tlog
 *.log
 *.vs/
-*.vcxproj
 *.user
 *.filters
 *.pdb

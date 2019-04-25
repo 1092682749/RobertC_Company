@@ -10,11 +10,12 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 // 抓包工具
+//该报文头没有options字段，因为该字段是不固定大小
 struct IPHeader
 {
 	union {
-		BYTE Version;	// 版本
-		BYTE HdrLen;	// IHL
+		BYTE Version;	// 版本号
+		BYTE HdrLen;	// IP头部长度
 	};
 	BYTE ServiceType;	// 服务类型
 	WORD TotalLen;		// 总长
@@ -28,7 +29,6 @@ struct IPHeader
 	WORD HdrChksum;		// 头校验和
 	DWORD SrcAddr;		// 源地址
 	DWORD DstAddr;		// 目的地址
-	//BYTE Options;		// 选项
 };
 struct TCPHeader
 {
@@ -50,18 +50,7 @@ struct UDPHeader
 	WORD DataOff;		// UDP头长
 	WORD Chksum;		// 校验和
 };
-struct NetData
-{
-	UINT	iDataNo;		// 消息No
-	int		iType;			// 消息类型
-	int		iTime;			// 次数
-	int		iDataLen;		// 数据长度
-	char	chChche[8];		// 缓存
-	char	strData[1000];	// 数据
-	NetData() {
-		memset(this, 0, sizeof(NetData));
-	}
-};
+
 void recvThread(LPVOID lpParam)
 {
 	SOCKET server;
@@ -83,10 +72,10 @@ int main()
 	//Sleep(3000);
 	MySocketUtils::SocketFactory::socketType = SOCK_RAW;
 	MySocketUtils::SocketFactory::protocol = IPPROTO_IP;
+	// 本机IP
 	char host[] = "172.17.12.68";
 	MySocketUtils::SocketFactory::host = host;
 	MySocketUtils::SocketFactory::GetSocket(s, "7777", resultAddr);
-	std::cout << "准备" << "\n";
 	DWORD code = 1;
 	DWORD dwBufferLen[10] = { 0 };
 	DWORD dwBufferInLen = 1;
@@ -112,10 +101,11 @@ int main()
 	TCPHeader tcpData;
 	UDPHeader udpData;
 	char data[1024] = { 0 };
+	std::cout << "Wait...\n";
 	while (true)
 	{
 		memset(&ipData, 0, sizeof(ipData));
-		// 从网卡接收数据
+		// 从网卡接收数据, 同步读取方式可能会在处理过程中漏掉IP数据包
 		recvfrom(s, readBuf, 10240, 0, (sockaddr*)&fromAddr, &len);
 		CopyMemory(&ipData, readBuf, sizeof(IPHeader));
 		char SourceIP[16] = { 0 };
@@ -123,16 +113,18 @@ int main()
 		// 网络字节序转主机字符串
 		InetNtopA(AF_INET, &ipData.SrcAddr, SourceIP, 16);
 		InetNtopA(AF_INET, &ipData.DstAddr, DesIP, 16);
-		// 过滤掉不相关的IP数据报
-		if (strcmp("47.90.39.104", DesIP) != 0 && strcmp("47.90.39.104", SourceIP) != 0)
+		// 过滤掉不相关的IP数据报(http://www.52im.net)
+		if (strcmp("115.29.145.108", DesIP) != 0 && strcmp("115.29.145.108", SourceIP) != 0 )
 		{
 			continue;
 		}
-		std::cout << "SourceIP: " << SourceIP << " ";
-		std::cout << "DesIP: " << DesIP << "\n";
+		
 		if (ipData.Protocol == IPPROTO_TCP)
 		{
-			NetData netData;
+			std::cout << "\n=============================================================================\n";
+			std::cout << "SourceIP: " << SourceIP << " ";
+			std::cout << "DesIP: " << DesIP << "\n";
+	
 			memset(&tcpData, 0, sizeof(tcpData));
 			memset(data, 0, 1024);
 			std::cout << "<<<This is a tcp>>>: ";
@@ -148,19 +140,27 @@ int main()
 			/*int port = tcpData.DstPort;
 			printf("%d\n", port * 1);*/
 			// 网络字节序转主机字节序
-			int sp = htons(tcpData.SrcPort);
-			int dp = htons(tcpData.DstPort);
-			std::cout << "SourcePort " << sp << "\t";
-			std::cout << "DesPort " << dp << "\n";
-			std::cout << "\n=======================================================================================\n";
+			int sp = ntohs(tcpData.SrcPort);
+			int dp = ntohs(tcpData.DstPort);
+			long sn = ntohl(tcpData.SeqNum);
+			long an = ntohl(tcpData.AckNum);
+			/*int sn1 = htonf(tcpData.SeqNum);
+			int an2 = htonf(tcpData.AckNum);
+			std::cout << "aaaaaaaaaaaaa" << an << "  " << an2 << "  " << sn << "  " << sn1 << "\n";*/
+			std::cout << "SourcePort " << sp;
+			std::cout << " DesPort " << dp << "\n";
+			std::cout << "Sequence Number " << sn;
+			std::cout << " Acknowledgement Number " << an << "\n";
+			std::cout << "\n-----------------------------------------------------------------\n";
 			// 逐个字节打印
 			for (int i = 0; i < 1024; i++)
 			{
-				
+
 				printf("%c", data[i]);
 			}
 			//printf("Data is: %s\n\n", readBuf);
-			std::cout << "\n============================================================================\n\n";
+			//std::cout << "\n============================================================================\n\n";
+			std::cout << "\n=================================================================================\n\n\n";
 
 		}
 		if (ipData.Protocol == IPPROTO_UDP)
@@ -169,7 +169,7 @@ int main()
 		}
 	}
 	
-    std::cout << "Hello World!\n"; 
+	return 0;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

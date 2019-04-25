@@ -12,7 +12,7 @@
 
 HANDLE hRoot;
 
-#define IMG_PATH "D:/a/bz/"
+#define IMG_PATH "D:/aa/"
 
 std::string GetHtml(const TCHAR* url, const TCHAR* objectName, BOOL isSecure)
 {
@@ -128,7 +128,7 @@ int main()
 	std::string content;
 	// 获取html文本
 	// 壁纸
-	content = GetHtml(L"wuxia.duowan.com", TEXT("/1903/417357259450.html"), FALSE);
+	content = GetHtml(L"wuxia.duowan.com", NULL, FALSE);
 	// bilibili
 	//content = GetHtml(L"www.bilibili.com", NULL, TRUE);
 	// 找到其中的图片链接
