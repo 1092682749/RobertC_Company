@@ -74,6 +74,7 @@ int main()
 	MySocketUtils::SocketFactory::protocol = IPPROTO_IP;
 	// 本机IP
 	char host[] = "172.17.12.68";
+	// std::cout << GetLastError() << "\n";
 	MySocketUtils::SocketFactory::host = host;
 	MySocketUtils::SocketFactory::GetSocket(s, "7777", resultAddr);
 	DWORD code = 1;
@@ -159,7 +160,6 @@ int main()
 				printf("%c", data[i]);
 			}
 			//printf("Data is: %s\n\n", readBuf);
-			//std::cout << "\n============================================================================\n\n";
 			std::cout << "\n=================================================================================\n\n\n";
 
 		}
